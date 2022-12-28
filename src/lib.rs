@@ -1,6 +1,6 @@
 #![feature(hash_drain_filter)]
 use std::collections::HashMap;
-use std::time::Instant;
+use std::time::{Instant, Duration};
 use std::hash::Hash;
 
 pub struct LRUTimedCache<T: Eq+Hash+Clone, V: Copy> {
@@ -66,5 +66,24 @@ impl <T: Eq+Hash+Clone, V: Copy> LRUTimedCache<T, V> {
             return true;
         }
         false
+    }
+
+    pub fn clear_older_than(&mut self, duration: Duration) -> usize {
+        let mut keys = Vec::<T>::new();
+        for (k, v) in self.elems.iter_mut() {
+            if v.elapsed() > duration {
+                keys.push(k.clone());
+            }
+        }
+
+        self.elems.drain_filter(|k, _| keys.contains(k));
+        self.val.drain_filter(|k, _| keys.contains(k));
+
+        return keys.len();
+    }
+
+    pub fn clear(&mut self) {
+        self.val.clear();
+        self.elems.clear();
     }
 }
